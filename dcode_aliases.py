@@ -18,80 +18,37 @@ from pathlib import Path
 import webbrowser
 import time
 
-def check_gcloud_auth():
-    """Check if user is already authenticated with gcloud"""
-    try:
-        # gcloud auth list 명령어로 현재 인증된 계정 확인
-        result = subprocess.run(
-            ['gcloud', 'auth', 'list', '--format=json'],
-            capture_output=True,
-            text=True
-        )
-        accounts = json.loads(result.stdout)
-        return len(accounts) > 0
-    except:
-        return False
+def check_password():
+    """Returns `True` if the user had the correct password."""
 
-def run_gcloud_login():
-    """Execute gcloud auth login command"""
-    try:
-        # gcloud auth login 실행
-        process = subprocess.Popen(
-            ['gcloud', 'auth', 'login', '--no-launch-browser'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        # 인증 URL 추출
-        auth_url = None
-        while True:
-            line = process.stdout.readline()
-            if not line:
-                break
-            if "https://" in line and "accounts.google.com" in line:
-                auth_url = line.strip()
-                break
-        
-        if auth_url:
-            st.markdown(f"[Google 계정으로 로그인하기]({auth_url})")
-            st.info("위 링크를 클릭하여 Google 계정으로 로그인한 후, 인증 코드를 아래에 입력하세요.")
-            
-            # 인증 코드 입력 받기
-            auth_code = st.text_input("인증 코드를 입력하세요:", type="password")
-            if auth_code:
-                # 인증 코드를 프로세스에 전달
-                process.stdin.write(f"{auth_code}\n")
-                process.stdin.flush()
-                
-                # 프로세스 완료 대기
-                process.wait()
-                
-                if process.returncode == 0:
-                    st.success("Google Cloud 인증이 완료되었습니다!")
-                    st.session_state.authenticated = True
-                    return True
-                else:
-                    st.error("인증에 실패했습니다. 다시 시도해주세요.")
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if (
+            st.session_state["username"] == st.secrets["login_id"] 
+            and st.session_state["password"] == st.secrets["login_pw"]
+        ):
+            st.session_state["password_correct"] = True
         else:
-            st.error("인증 URL을 가져오는데 실패했습니다.")
-    except Exception as e:
-        st.error(f"오류가 발생했습니다: {str(e)}")
-    return False
+            st.session_state["password_correct"] = False
 
-if 'editing' not in st.session_state:
-    st.session_state.editing = {
-        'name_ko': False,
-        'name_en': False,
-        'include_names': False
-    }
-
-if 'current_index' not in st.session_state:
-    st.session_state.current_index = 0
-
-if 'claude_response' not in st.session_state:
-    st.session_state.claude_response = {}
-
+    if "password_correct" not in st.session_state:
+        # First run, show inputs for username + password.
+        st.text_input("아이디", on_change=password_entered, key="username")
+        st.text_input(
+            "비밀번호", type="password", on_change=password_entered, key="password"
+        )
+        return False
+    elif not st.session_state["password_correct"]:
+        # Password not correct, show input + error.
+        st.text_input("아이디", on_change=password_entered, key="username")
+        st.text_input(
+            "비밀번호", type="password", on_change=password_entered, key="password"
+        )
+        st.error("😕 아이디 또는 비밀번호가 올바르지 않습니다")
+        return False
+    else:
+        # Password correct.
+        return True
 @dataclass
 class Task:
     pass
