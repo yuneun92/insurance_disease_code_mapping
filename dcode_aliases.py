@@ -10,33 +10,33 @@ from litellm import completion
 
 import streamlit as st
 
-# 기존 코드 맨 앞에 이 부분을 추가
-def check_password():
-    """Returns `True` if the user had the correct password."""
+# # 기존 코드 맨 앞에 이 부분을 추가
+# def check_password():
+#     """Returns `True` if the user had the correct password."""
 
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["password"]:
-            st.session_state["password_correct"] = True
-        else:
-            st.session_state["password_correct"] = False
+#     def password_entered():
+#         """Checks whether a password entered by the user is correct."""
+#         if st.session_state["password"] == st.secrets["password"]:
+#             st.session_state["password_correct"] = True
+#         else:
+#             st.session_state["password_correct"] = False
 
-    # First run, show input for password
-    if "password_correct" not in st.session_state:
-        st.text_input(
-            "비밀번호를 입력하세요", 
-            type="password", 
-            on_change=password_entered, 
-            key="password"
-        )
-        return False
+#     # First run, show input for password
+#     if "password_correct" not in st.session_state:
+#         st.text_input(
+#             "비밀번호를 입력하세요", 
+#             type="password", 
+#             on_change=password_entered, 
+#             key="password"
+#         )
+#         return False
 
-    # Password correct
-    return st.session_state["password_correct"]
+#     # Password correct
+#     return st.session_state["password_correct"]
 
-# 비밀번호 검증
-if not check_password():
-    st.stop()  # 비밀번호가 틀리면 여기서 앱 실행 중단
+# # 비밀번호 검증
+# if not check_password():
+#     st.stop()  # 비밀번호가 틀리면 여기서 앱 실행 중단
 
 if 'editing' not in st.session_state:
     st.session_state.editing = {
