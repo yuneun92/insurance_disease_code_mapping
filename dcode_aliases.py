@@ -198,27 +198,16 @@ def main():
         auth=auth,
         database=database
     )
-    # 인증 상태 초기화
-    if 'authenticated' not in st.session_state:
-        st.session_state.authenticated = False
-
-    # 이미 인증된 상태인지 확인
-    if not st.session_state.authenticated and not check_gcloud_auth():
-        st.warning("Google Cloud 인증이 필요합니다.")
-        if st.button("Google Cloud 로그인"):
-            run_gcloud_login()
+    # 로그인 확인
+    if not check_password():
         st.stop()
 
-    # 로그아웃 기능
-    if st.session_state.authenticated:
-        if st.sidebar.button("로그아웃"):
-            try:
-                subprocess.run(['gcloud', 'auth', 'revoke', '--all'], check=True)
-                st.session_state.authenticated = False
-                st.success("로그아웃되었습니다.")
-                st.rerun()
-            except subprocess.CalledProcessError:
-                st.error("로그아웃 중 오류가 발생했습니다.")
+    # 로그아웃 버튼
+    if st.sidebar.button("로그아웃"):
+        del st.session_state["password_correct"]
+        del st.session_state["username"]
+        del st.session_state["password"]
+        st.rerun()
                 
     # Get diseases data
     if 'diseases' not in st.session_state:
