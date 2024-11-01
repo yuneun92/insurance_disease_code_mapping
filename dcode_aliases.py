@@ -26,8 +26,8 @@ def check_password():
         try:
             input_username = st.session_state["username"]
             input_password = st.session_state["password"]
-            stored_username = st.secrets["login_id"]
-            stored_password = st.secrets["login_pw"]
+            stored_username = st.secrets["ID"]
+            stored_password = st.secrets["PW"]
             
             # 디버깅용 출력
             st.write("입력된 아이디:", input_username)
