@@ -10,33 +10,74 @@ from litellm import completion
 
 import streamlit as st
 
-# # 기존 코드 맨 앞에 이 부분을 추가
-# def check_password():
-#     """Returns `True` if the user had the correct password."""
+import streamlit as st
+import subprocess
+import os
+import json
+from pathlib import Path
+import webbrowser
+import time
 
-#     def password_entered():
-#         """Checks whether a password entered by the user is correct."""
-#         if st.session_state["password"] == st.secrets["password"]:
-#             st.session_state["password_correct"] = True
-#         else:
-#             st.session_state["password_correct"] = False
+def check_gcloud_auth():
+    """Check if user is already authenticated with gcloud"""
+    try:
+        # gcloud auth list 명령어로 현재 인증된 계정 확인
+        result = subprocess.run(
+            ['gcloud', 'auth', 'list', '--format=json'],
+            capture_output=True,
+            text=True
+        )
+        accounts = json.loads(result.stdout)
+        return len(accounts) > 0
+    except:
+        return False
 
-#     # First run, show input for password
-#     if "password_correct" not in st.session_state:
-#         st.text_input(
-#             "비밀번호를 입력하세요", 
-#             type="password", 
-#             on_change=password_entered, 
-#             key="password"
-#         )
-#         return False
-
-#     # Password correct
-#     return st.session_state["password_correct"]
-
-# # 비밀번호 검증
-# if not check_password():
-#     st.stop()  # 비밀번호가 틀리면 여기서 앱 실행 중단
+def run_gcloud_login():
+    """Execute gcloud auth login command"""
+    try:
+        # gcloud auth login 실행
+        process = subprocess.Popen(
+            ['gcloud', 'auth', 'login', '--no-launch-browser'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # 인증 URL 추출
+        auth_url = None
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
+            if "https://" in line and "accounts.google.com" in line:
+                auth_url = line.strip()
+                break
+        
+        if auth_url:
+            st.markdown(f"[Google 계정으로 로그인하기]({auth_url})")
+            st.info("위 링크를 클릭하여 Google 계정으로 로그인한 후, 인증 코드를 아래에 입력하세요.")
+            
+            # 인증 코드 입력 받기
+            auth_code = st.text_input("인증 코드를 입력하세요:", type="password")
+            if auth_code:
+                # 인증 코드를 프로세스에 전달
+                process.stdin.write(f"{auth_code}\n")
+                process.stdin.flush()
+                
+                # 프로세스 완료 대기
+                process.wait()
+                
+                if process.returncode == 0:
+                    st.success("Google Cloud 인증이 완료되었습니다!")
+                    st.session_state.authenticated = True
+                    return True
+                else:
+                    st.error("인증에 실패했습니다. 다시 시도해주세요.")
+        else:
+            st.error("인증 URL을 가져오는데 실패했습니다.")
+    except Exception as e:
+        st.error(f"오류가 발생했습니다: {str(e)}")
+    return False
 
 if 'editing' not in st.session_state:
     st.session_state.editing = {
@@ -200,7 +241,28 @@ def main():
         auth=auth,
         database=database
     )
+    # 인증 상태 초기화
+    if 'authenticated' not in st.session_state:
+        st.session_state.authenticated = False
 
+    # 이미 인증된 상태인지 확인
+    if not st.session_state.authenticated and not check_gcloud_auth():
+        st.warning("Google Cloud 인증이 필요합니다.")
+        if st.button("Google Cloud 로그인"):
+            run_gcloud_login()
+        st.stop()
+
+    # 로그아웃 기능
+    if st.session_state.authenticated:
+        if st.sidebar.button("로그아웃"):
+            try:
+                subprocess.run(['gcloud', 'auth', 'revoke', '--all'], check=True)
+                st.session_state.authenticated = False
+                st.success("로그아웃되었습니다.")
+                st.rerun()
+            except subprocess.CalledProcessError:
+                st.error("로그아웃 중 오류가 발생했습니다.")
+                
     # Get diseases data
     if 'diseases' not in st.session_state:
         st.session_state.diseases = processor.get_disease_data()
