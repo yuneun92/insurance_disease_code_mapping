@@ -23,12 +23,26 @@ def check_password():
 
     def password_entered():
         """Checks whether a password entered by the user is correct."""
-        if (
-            st.session_state["username"] == st.secrets["login_id"] 
-            and st.session_state["password"] == st.secrets["login_pw"]
-        ):
-            st.session_state["password_correct"] = True
-        else:
+        try:
+            input_username = st.session_state["username"]
+            input_password = st.session_state["password"]
+            stored_username = st.secrets["login_id"]
+            stored_password = st.secrets["login_pw"]
+            
+            # 디버깅용 출력
+            st.write("입력된 아이디:", input_username)
+            st.write("저장된 아이디:", stored_username)
+            st.write("입력된 비밀번호:", input_password)
+            st.write("저장된 비밀번호:", stored_password)
+            
+            if (input_username == stored_username and 
+                input_password == stored_password):
+                st.session_state["password_correct"] = True
+            else:
+                st.session_state["password_correct"] = False
+                
+        except Exception as e:
+            st.error(f"오류 발생: {str(e)}")
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
@@ -49,6 +63,7 @@ def check_password():
     else:
         # Password correct.
         return True
+
 @dataclass
 class Task:
     pass
