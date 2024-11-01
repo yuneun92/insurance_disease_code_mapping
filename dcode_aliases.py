@@ -213,16 +213,22 @@ def main():
         auth=auth,
         database=database
     )
+    # Streamlit secrets 확인
+    if 'login_id' not in st.secrets or 'login_pw' not in st.secrets:
+        st.error("Secrets에 로그인 정보가 설정되지 않았습니다!")
+        st.stop()
+
     # 로그인 확인
     if not check_password():
         st.stop()
 
     # 로그아웃 버튼
     if st.sidebar.button("로그아웃"):
-        del st.session_state["password_correct"]
-        del st.session_state["username"]
-        del st.session_state["password"]
+        for key in ["password_correct", "username", "password"]:
+            if key in st.session_state:
+                del st.session_state[key]
         st.rerun()
+
                 
     # Get diseases data
     if 'diseases' not in st.session_state:
